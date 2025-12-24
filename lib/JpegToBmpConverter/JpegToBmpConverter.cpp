@@ -13,41 +13,60 @@ struct JpegReadContext {
   size_t bufferFilled;
 };
 
-// 4x4 Bayer ordered dithering matrix (normalized to 0-255 range for 16 levels)
-// This creates a pattern that distributes quantization error spatially
-// Reference: https://surma.dev/things/ditherpunk/
-static const uint8_t bayerMatrix4x4[4][4] = {
-    {0, 128, 32, 160},    //  0/16,  8/16,  2/16, 10/16
-    {192, 64, 224, 96},   // 12/16,  4/16, 14/16,  6/16
-    {48, 176, 16, 144},   //  3/16, 11/16,  1/16,  9/16
-    {240, 112, 208, 80}   // 15/16,  7/16, 13/16,  5/16
+// [COMMENTED OUT] 4x4 Bayer ordered dithering matrix
+// static const uint8_t bayerMatrix4x4[4][4] = {
+//     {0, 128, 32, 160},
+//     {192, 64, 224, 96},
+//     {48, 176, 16, 144},
+//     {240, 112, 208, 80}
+// };
+
+// 8x8 Clustered-dot dither matrix (45° classical halftone screen)
+// Reference: Mitsa & Parker 1992 "Digital halftoning technique using a blue-noise mask"
+// Values arranged so dots grow from center outward
+static const uint8_t CLUSTERED_DOT_8X8[8][8] = {
+    { 24,  10,  12,  26,  35,  47,  49,  37},
+    {  8,   0,   2,  14,  45,  59,  61,  51},
+    { 22,   6,   4,  16,  43,  57,  63,  53},
+    { 30,  20,  18,  28,  33,  41,  55,  39},
+    { 34,  46,  48,  36,  25,  11,  13,  27},
+    { 44,  58,  60,  50,   9,   1,   3,  15},
+    { 42,  56,  62,  52,  23,   7,   5,  17},
+    { 32,  40,  54,  38,  31,  21,  19,  29}
 };
 
-// Helper function: Convert 8-bit grayscale to 2-bit (0-3) using ordered dithering
-uint8_t JpegToBmpConverter::grayscaleTo2Bit(const uint8_t grayscale, const int x, const int y) {
-  // Get the threshold from Bayer matrix based on pixel position
-  const uint8_t threshold = bayerMatrix4x4[y & 3][x & 3];
+// Quantize using clustered-dot ordered dither for 4 levels
+static inline uint8_t quantizeClusteredDot(int gray, int x, int y) {
+  if (gray < 0) gray = 0;
+  if (gray > 255) gray = 255;
 
-  // For 4-level output (2-bit), we need to map grayscale to one of 4 levels
-  // Each level spans ~85 values (255/3 ≈ 85)
-  // We use the Bayer threshold to decide between adjacent levels
+  // Get threshold from clustered-dot matrix (0-63 scaled to 0-255)
+  const int threshold = CLUSTERED_DOT_8X8[y & 7][x & 7] * 4;
 
-  // Scale grayscale to 0-765 range (3 * 255) for finer comparison
-  const int scaled = grayscale * 3;
+  // Map gray (0-255) to 4 levels with dithering
+  const int scaled = gray * 3;
 
-  // Determine which level pair we're between, then use dithering to pick one
   if (scaled < 255) {
-    // Between level 0 (black) and level 1 (dark gray)
-    // Use threshold to decide: if scaled value + dither > 255, go to level 1
     return (scaled + threshold >= 255) ? 1 : 0;
   } else if (scaled < 510) {
-    // Between level 1 (dark gray) and level 2 (light gray)
     return ((scaled - 255) + threshold >= 255) ? 2 : 1;
   } else {
-    // Between level 2 (light gray) and level 3 (white)
     return ((scaled - 510) + threshold >= 255) ? 3 : 2;
   }
 }
+
+// [COMMENTED OUT] Original Bayer-based grayscaleTo2Bit
+// uint8_t JpegToBmpConverter::grayscaleTo2Bit(const uint8_t grayscale, const int x, const int y) {
+//   const uint8_t threshold = bayerMatrix4x4[y & 3][x & 3];
+//   const int scaled = grayscale * 3;
+//   if (scaled < 255) {
+//     return (scaled + threshold >= 255) ? 1 : 0;
+//   } else if (scaled < 510) {
+//     return ((scaled - 255) + threshold >= 255) ? 2 : 1;
+//   } else {
+//     return ((scaled - 510) + threshold >= 255) ? 3 : 2;
+//   }
+// }
 
 inline void write16(Print& out, const uint16_t value) {
   // out.write(reinterpret_cast<const uint8_t *>(&value), 2);
@@ -214,39 +233,33 @@ bool JpegToBmpConverter::jpegFileToBmpStream(File& jpegFile, Print& bmpOut) {
       for (int blockY = 0; blockY < mcuPixelHeight; blockY++) {
         for (int blockX = 0; blockX < mcuPixelWidth; blockX++) {
           const int pixelX = mcuX * mcuPixelWidth + blockX;
+          if (pixelX >= imageInfo.m_width) continue;
 
-          // Skip pixels outside image width (can happen with MCU alignment)
-          if (pixelX >= imageInfo.m_width) {
-            continue;
-          }
+          // Calculate proper block offset for picojpeg buffer
+          const int blockCol = blockX / 8;
+          const int blockRow = blockY / 8;
+          const int localX = blockX % 8;
+          const int localY = blockY % 8;
+          const int blocksPerRow = mcuPixelWidth / 8;
+          const int blockIndex = blockRow * blocksPerRow + blockCol;
+          const int pixelOffset = blockIndex * 64 + localY * 8 + localX;
 
-          // Calculate which 8x8 block and position within that block
-          const int block8x8Col = blockX / 8;  // 0 or 1 for 16-wide MCU
-          const int block8x8Row = blockY / 8;  // 0 or 1 for 16-tall MCU
-          const int pixelInBlockX = blockX % 8;
-          const int pixelInBlockY = blockY % 8;
+          // [COMMENTED OUT] Original wrong indexing:
+          // gray = imageInfo.m_pMCUBufR[blockY * mcuPixelWidth + blockX];
 
-          // Calculate byte offset: each 8x8 block is 64 bytes
-          // Blocks are arranged: [0, 64], [128, 192]
-          const int blockOffset = (block8x8Row * (mcuPixelWidth / 8) + block8x8Col) * 64;
-          const int mcuIndex = blockOffset + pixelInBlockY * 8 + pixelInBlockX;
-
-          // Get grayscale value
+          // Get grayscale value using pixelOffset calculated above
           uint8_t gray;
           if (imageInfo.m_comps == 1) {
-            // Grayscale image
-            gray = imageInfo.m_pMCUBufR[mcuIndex];
+            gray = imageInfo.m_pMCUBufR[pixelOffset];
           } else {
-            // RGB image - convert to grayscale
-            const uint8_t r = imageInfo.m_pMCUBufR[mcuIndex];
-            const uint8_t g = imageInfo.m_pMCUBufG[mcuIndex];
-            const uint8_t b = imageInfo.m_pMCUBufB[mcuIndex];
+            const uint8_t r = imageInfo.m_pMCUBufR[pixelOffset];
+            const uint8_t g = imageInfo.m_pMCUBufG[pixelOffset];
+            const uint8_t b = imageInfo.m_pMCUBufB[pixelOffset];
             // Luminance formula: Y = 0.299*R + 0.587*G + 0.114*B
             // Using integer approximation: (30*R + 59*G + 11*B) / 100
             gray = (r * 30 + g * 59 + b * 11) / 100;
           }
 
-          // Store grayscale value in MCU row buffer
           mcuRowBuffer[blockY * imageInfo.m_width + pixelX] = gray;
         }
       }
@@ -263,10 +276,11 @@ bool JpegToBmpConverter::jpegFileToBmpStream(File& jpegFile, Print& bmpOut) {
       for (int x = 0; x < imageInfo.m_width; x++) {
         const int bufferY = y - startRow;
         const uint8_t gray = mcuRowBuffer[bufferY * imageInfo.m_width + x];
-        const uint8_t twoBit = grayscaleTo2Bit(gray, x, y);
+        // [COMMENTED OUT] const uint8_t twoBit = grayscaleTo2Bit(gray, x, y);
+        const uint8_t twoBit = quantizeClusteredDot(gray, x, y);
 
         const int byteIndex = (x * 2) / 8;
-        const int bitOffset = 6 - ((x * 2) % 8);  // 6, 4, 2, 0
+        const int bitOffset = 6 - ((x * 2) % 8);
         rowBuffer[byteIndex] |= (twoBit << bitOffset);
       }
 
