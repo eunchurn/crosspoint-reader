@@ -14,7 +14,7 @@
 #include <builtinFonts/pixelarial14.h>
 #include <builtinFonts/ubuntu_10.h>
 #include <builtinFonts/ubuntu_bold_10.h>
-#include <builtinFonts/pretendard_10.h>
+#include <builtinFonts/pretendard_8.h>
 #include <builtinFonts/d2coding_14.h>
 
 #include "Battery.h"
@@ -66,7 +66,7 @@ EpdFont ubuntu10Font(&ubuntu_10);
 EpdFont ubuntuBold10Font(&ubuntu_bold_10);
 EpdFontFamily ubuntuFontFamily(&ubuntu10Font, &ubuntuBold10Font);
 
-EpdFont pretendardFont(&pretendard_10);
+EpdFont pretendardFont(&pretendard_8);
 EpdFontFamily pretendardFontFamily(&pretendardFont);
 
 EpdFont d2codingFont(&d2coding_14);
@@ -175,9 +175,9 @@ void onGoHome() {
 void setupDisplayAndFonts() {
   einkDisplay.begin();
   Serial.printf("[%lu] [   ] Display initialized\n", millis());
-  renderer.insertFont(READER_FONT_ID, bookerlyFontFamily);
-  renderer.insertFont(UI_FONT_ID, ubuntuFontFamily);
-  renderer.insertFont(SMALL_FONT_ID, smallFontFamily);
+  renderer.insertFont(READER_FONT_ID, eulyooFontFamily);
+  renderer.insertFont(UI_FONT_ID, pretendardFontFamily);
+  renderer.insertFont(SMALL_FONT_ID, pretendardFontFamily);
   Serial.printf("[%lu] [   ] Fonts setup\n", millis());
 }
 
@@ -215,17 +215,6 @@ void setup() {
   verifyWakeupLongPress();
 
   setupDisplayAndFonts();
-  // Initialize display
-  einkDisplay.begin();
-  Serial.printf("[%lu] [   ] Display initialized\n", millis());
-
-  // renderer.insertFont(READER_FONT_ID, bookerlyFontFamily);
-  renderer.insertFont(READER_FONT_ID, eulyooFontFamily);
-  // renderer.insertFont(UI_FONT_ID, ubuntuFontFamily);
-  renderer.insertFont(UI_FONT_ID, pretendardFontFamily);
-  // renderer.insertFont(SMALL_FONT_ID, smallFontFamily);
-  renderer.insertFont(SMALL_FONT_ID, d2codingFontFamily);
-  Serial.printf("[%lu] [   ] Fonts setup\n", millis());
 
   exitActivity();
   enterNewActivity(new BootActivity(renderer, inputManager));
