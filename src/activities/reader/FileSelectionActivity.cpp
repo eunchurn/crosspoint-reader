@@ -146,7 +146,7 @@ void FileSelectionActivity::render() const {
   renderer.clearScreen();
 
   const auto pageWidth = GfxRenderer::getScreenWidth();
-  renderer.drawCenteredText(READER_FONT_ID, 10, "Books", true, BOLD);
+  renderer.drawCenteredText(UI_FONT_ID, 10, "Books", true, BOLD);
 
   // Help text
   renderer.drawText(SMALL_FONT_ID, 20, GfxRenderer::getScreenHeight() - 30, "Press BACK for Home");
