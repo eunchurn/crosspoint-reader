@@ -9,13 +9,13 @@
 #include <builtinFonts/bookerly_bold_2b.h>
 #include <builtinFonts/bookerly_bold_italic_2b.h>
 #include <builtinFonts/bookerly_italic_2b.h>
+#include <builtinFonts/d2coding_14.h>
 #include <builtinFonts/eulyoo_2b.h>
 #include <builtinFonts/eulyoo_semibold_2b.h>
 #include <builtinFonts/pixelarial14.h>
+#include <builtinFonts/pretendard_8.h>
 #include <builtinFonts/ubuntu_10.h>
 #include <builtinFonts/ubuntu_bold_10.h>
-#include <builtinFonts/pretendard_8.h>
-#include <builtinFonts/d2coding_14.h>
 
 #include "Battery.h"
 #include "CrossPointSettings.h"
