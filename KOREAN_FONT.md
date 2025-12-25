@@ -59,7 +59,7 @@ TTF 폰트를 헤더 파일로 변환하려면:
 python lib/EpdFont/scripts/fontconvert.py <name> <size> <ttf_file> --2bit > output.h
 ```
 
-### 을유폰트 변환 (한글 + 한자 + CJK 기호)
+### 을유폰트 변환 (한글 + 한자 + 특수문자)
 
 ```bash
 # Regular
@@ -68,6 +68,17 @@ python lib/EpdFont/scripts/fontconvert.py eulyoo_2b 14 fonts/Eulyoo1945-Regular.
   --additional-intervals 0x3130,0x318F \
   --additional-intervals 0x4E00,0x9FFF \
   --additional-intervals 0x3000,0x303F \
+  --additional-intervals 0x2000,0x206F \
+  --additional-intervals 0x2100,0x214F \
+  --additional-intervals 0x2150,0x218F \
+  --additional-intervals 0x2190,0x21FF \
+  --additional-intervals 0x2200,0x22FF \
+  --additional-intervals 0x2300,0x23FF \
+  --additional-intervals 0x2460,0x24FF \
+  --additional-intervals 0x25A0,0x25FF \
+  --additional-intervals 0x2600,0x26FF \
+  --additional-intervals 0x2700,0x27BF \
+  --additional-intervals 0x3200,0x32FF \
   2>/dev/null > lib/EpdFont/builtinFonts/eulyoo_2b.h
 
 # SemiBold
@@ -76,6 +87,17 @@ python lib/EpdFont/scripts/fontconvert.py eulyoo_semibold_2b 14 fonts/Eulyoo1945
   --additional-intervals 0x3130,0x318F \
   --additional-intervals 0x4E00,0x9FFF \
   --additional-intervals 0x3000,0x303F \
+  --additional-intervals 0x2000,0x206F \
+  --additional-intervals 0x2100,0x214F \
+  --additional-intervals 0x2150,0x218F \
+  --additional-intervals 0x2190,0x21FF \
+  --additional-intervals 0x2200,0x22FF \
+  --additional-intervals 0x2300,0x23FF \
+  --additional-intervals 0x2460,0x24FF \
+  --additional-intervals 0x25A0,0x25FF \
+  --additional-intervals 0x2600,0x26FF \
+  --additional-intervals 0x2700,0x27BF \
+  --additional-intervals 0x3200,0x32FF \
   2>/dev/null > lib/EpdFont/builtinFonts/eulyoo_semibold_2b.h
 ```
 
@@ -87,6 +109,17 @@ python lib/EpdFont/scripts/fontconvert.py eulyoo_semibold_2b 14 fonts/Eulyoo1945
 | `0x3130-0x318F` | 한글 호환 자모 (Hangul Compatibility Jamo) |
 | `0x4E00-0x9FFF` | CJK 통합 한자 (CJK Unified Ideographs) - 20,992자 |
 | `0x3000-0x303F` | CJK 기호 및 문장부호 (『』「」《》〈〉【】 등) |
+| `0x2000-0x206F` | General Punctuation (—–…''""†) |
+| `0x2100-0x214F` | Letterlike Symbols (℃℉№™℡) |
+| `0x2150-0x218F` | Number Forms (⅓⅔¼½¾) |
+| `0x2190-0x21FF` | Arrows (←↑→↓↔↕) |
+| `0x2200-0x22FF` | Mathematical Operators (±×÷≠≤≥∞) |
+| `0x2300-0x23FF` | Miscellaneous Technical (⌚⌛⏰) |
+| `0x2460-0x24FF` | Enclosed Alphanumerics (①②③ⓐⓑⓒ) |
+| `0x25A0-0x25FF` | Geometric Shapes (○●◎□■△▲) |
+| `0x2600-0x26FF` | Miscellaneous Symbols (☀☁☂★☆♠♣♥♦) |
+| `0x2700-0x27BF` | Dingbats (✓✔✕✖✗✘) |
+| `0x3200-0x32FF` | Enclosed CJK (㈜㈀㉠㉡) |
 
 ### 의존성
 - Python 3
