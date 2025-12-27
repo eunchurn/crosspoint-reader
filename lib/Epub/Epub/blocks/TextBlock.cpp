@@ -75,8 +75,8 @@ std::unique_ptr<TextBlock> TextBlock::deserialize(File& file) {
 
   // Validate data consistency: all three lists must have the same size
   if (wc != xc || wc != sc) {
-    Serial.printf("[%lu] [TXB] Deserialization failed: size mismatch (words=%u, xpos=%u, styles=%u)\n", millis(), wc, xc,
-                  sc);
+    Serial.printf("[%lu] [TXB] Deserialization failed: size mismatch (words=%u, xpos=%u, styles=%u)\n", millis(), wc,
+                  xc, sc);
     return nullptr;
   }
 
